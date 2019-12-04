@@ -5,6 +5,7 @@ import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
@@ -45,15 +46,6 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private TimerTask OnTimerLoop = new TimerTask()
-    {
-        public void run() {
-            Message msg = tHandler.obtainMessage();
-            msg.what = 0;
-            tHandler.sendMessage(msg);
-        }
-    };
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,9 +55,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void InitUI()
     {
-        _timer = new Timer();
-        _timer.schedule(OnTimerLoop,1000,1000);
-        OnTimerLoop.cancel();
         ImageButton btnLeft = findViewById(R.id.btnLeft);
         btnLeft.setOnClickListener(new View.OnClickListener(){
             public void onClick(View v) {
@@ -108,19 +97,47 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+        Button btnStop = findViewById(R.id.btnStop);
+        btnStop.setVisibility(View.INVISIBLE);
+        btnStop.setOnClickListener(new View.OnClickListener(){
+            public void onClick(View view) {
+                TimerStop();
+                Button btn = (Button)view;
+                btn.setVisibility(View.INVISIBLE);
+                _isLeft = false;
+                _isRight = false;
+                _leftTime = 0;
+                _rightTime = 0;
+                SetTime(TimeType.Left, _leftTime);
+                SetTime(TimeType.Right, _rightTime);
+                SetTime(TimeType.Total, 0);
+            }
+        });
     }
 
     private void TimerStart()
     {
-        if(_timer == null)
-        {
-            _timer = new Timer();
-        }
-        _isTimeActive = true;
         try
         {
-            //_timer.schedule(OnTimerLoop,1000,1000);
-            OnTimerLoop.run();
+            if(_timer == null)
+            {
+                _timer = new Timer();
+            }
+            _isTimeActive = true;
+            TimerTask timeLoop = new TimerTask()
+            {
+                public void run() {
+                    Message msg = tHandler.obtainMessage();
+                    msg.what = 0;
+                    tHandler.sendMessage(msg);
+                }
+            };
+            _timer.schedule(timeLoop,1000,1000);
+            Button btnStop = findViewById(R.id.btnStop);
+            if(btnStop.getVisibility() == View.INVISIBLE)
+            {
+                btnStop.setVisibility(View.VISIBLE);
+            }
         }
         catch(Exception err)
         {
@@ -131,8 +148,11 @@ public class MainActivity extends AppCompatActivity {
     private void TimerStop()
     {
         _isTimeActive = false;
-        OnTimerLoop.cancel();
-        //_timer = null;
+        if(_timer != null)
+        {
+            _timer.cancel();
+            _timer = null;
+        }
     }
 
     private void SetTime(TimeType type, int val)
@@ -204,5 +224,15 @@ public class MainActivity extends AppCompatActivity {
             result = "";
         }
         return result;
+    }
+
+    private void AddMealInfo(MealInfo info)
+    {
+
+    }
+
+    private void CreateMealInfoItem()
+    {
+
     }
 }
