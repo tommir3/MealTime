@@ -6,5 +6,6 @@ public class MealInfo {
     public int mealType;
     public int leftTime;
     public int rightTime;
+    public int totalTime;
     public String remark;
 }

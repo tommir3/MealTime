@@ -255,60 +255,63 @@
 
         </android.support.v7.widget.CardView>
 
-        <ScrollView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="0.8"
-            android:scrollbarStyle="insideInset"
-            tools:layout_editor_absoluteY="335dp">
+            android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="horizontal">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                <TextView
+                    android:id="@+id/textView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginLeft="5dp"
                     android:layout_weight="1"
-                    android:orientation="horizontal">
+                    android:text="最近记录"
+                    android:textSize="24sp" />
 
-                    <TextView
-                        android:id="@+id/textView"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_marginLeft="5dp"
-                        android:layout_weight="1"
-                        android:text="最近记录"
-                        android:textSize="24sp" />
+                <TextView
+                    android:id="@+id/tvTodaySum"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_weight="1"
+                    android:text="今日用餐10次"
+                    android:textSize="18sp" />
 
-                    <TextView
-                        android:id="@+id/tvTodaySum"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_weight="1"
-                        android:text="今日用餐10次"
-                        android:textSize="18sp" />
+                <Button
+                    android:id="@+id/btnList"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_weight="0"
+                    android:text="更多" />
+            </LinearLayout>
 
-                    <Button
-                        android:id="@+id/btnList"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_weight="0"
-                        android:text="更多" />
-                </LinearLayout>
+            <ScrollView
+                android:id="@+id/svList"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="0.2"
+                android:scrollbarStyle="insideInset"
+                tools:layout_editor_absoluteY="335dp">
 
                 <LinearLayout
+                    android:id="@+id/llMealList"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
                     <LinearLayout
-                        android:id="@+id/llMealList"
+                        android:id="@+id/llMealList_TMP"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
@@ -321,7 +324,7 @@
                             android:layout_marginLeft="8dp"
                             android:layout_weight="1"
                             android:text="12月03日 17:30"
-                            android:textSize="18sp" />
+                            android:textSize="20sp" />
 
                         <TextView
                             android:id="@+id/textView7"
@@ -329,7 +332,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="左侧 4分钟"
-                            android:textSize="18sp" />
+                            android:textSize="20sp" />
 
                         <TextView
                             android:id="@+id/textView11"
@@ -337,12 +340,12 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="右侧 10分钟"
-                            android:textSize="18sp" />
+                            android:textSize="20sp" />
                     </LinearLayout>
                 </LinearLayout>
+            </ScrollView>
 
-            </LinearLayout>
-        </ScrollView>
+        </LinearLayout>
 
     </LinearLayout>
 
