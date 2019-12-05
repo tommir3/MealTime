@@ -27,6 +27,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean _isLeft = false;
     private boolean _isRight = false;
     private boolean _isTimeActive = false;
+    private Date _initDate;
+    private int _mealCount = 0;
 
     private enum TimeType
     {
@@ -116,15 +118,37 @@ public class MainActivity extends AppCompatActivity {
         Button btnList = findViewById(R.id.btnList);
         btnList.setOnClickListener(new View.OnClickListener(){
             public void onClick(View view) {
-                //todo:不好使
-                ScrollView sv = findViewById(R.id.svList);
-                LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams)sv.getLayoutParams();
-                lp.weight = 0;
-                System.out.printf("\naaaaaaa " + lp.weight+ " aaaaaaa\n");
+                //列表放大
+                LinearLayout part3 = findViewById(R.id.part3);
+                LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams)part3.getLayoutParams();
+                if(lp.weight == 0)
+                {
+                    lp.weight = 0.8f;
+                }
+                else
+                {
+                    lp.weight = 0;
+                }
+                part3.setLayoutParams(lp);
             }
         });
         MealInfo[] infos = _dbbase.GetMealInfos();
-        CreateMealInfos(infos);
+        _mealCount = 0;
+        _initDate = new Date();
+        if(infos != null)
+        {
+            CreateMealInfos(infos);
+            for(int i = 0; i <  infos.length; ++i)
+            {
+                Date cmpDate = DateHelper.StringToDate(infos[i].dateStr);
+                if(DateHelper.IsSameDate(_initDate,cmpDate, Calendar.DAY_OF_MONTH))
+                {
+                    _mealCount++;
+                }
+            }
+        }
+        TextView tvTodaySum = findViewById(R.id.tvTodaySum);
+        tvTodaySum.setText("今日用餐" + _mealCount + "次");
     }
 
     private void TimerStart()
@@ -257,6 +281,7 @@ public class MainActivity extends AppCompatActivity {
         TextView tvRight = new TextView(this.getApplicationContext());
         layout.setOrientation(LinearLayout.HORIZONTAL);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.MATCH_PARENT,1);
+        lp.setMargins(0,5,0,5);
         layout.setLayoutParams(lp);
         layout.setTag(info);
         layout.setOnClickListener(new View.OnClickListener(){
@@ -292,18 +317,52 @@ public class MainActivity extends AppCompatActivity {
         list.addView(layout,0);
     }
 
-    private void LeftEvent(View v)
+    private void SetImageButton(TimeType type, boolean isActive)
+    {
+        ImageButton btnLeft = findViewById(R.id.btnLeft);
+        ImageButton btnRight = findViewById(R.id.btnRight);
+        if(type == TimeType.Left)
+        {
+
+            if(isActive)
+            {
+                //btnLeft.setBackgroundResource(R.drawable.suckling);
+                btnLeft.setImageResource(R.drawable.suckling);
+                btnRight.setImageResource(R.drawable.right);
+            }
+            else
+            {
+                btnLeft.setImageResource(R.drawable.left);
+            }
+        }
+        else if(type == TimeType.Right)
+        {
+            if(isActive)
+            {
+                btnRight.setImageResource(R.drawable.suckling);
+                btnLeft.setImageResource(R.drawable.left);
+            }
+            else
+            {
+                btnRight.setImageResource(R.drawable.right);
+            }
+        }
+    }
+
+    private void LeftEvent(View view)
     {
         if(_isLeft)
         {
             _isLeft = false;
             _isRight = false;
             TimerStop();
+            SetImageButton(TimeType.Left, false);
         }
         else
         {
             _isLeft = true;
             _isRight = false;
+            SetImageButton(TimeType.Left, true);
             if(!_isTimeActive)
             {
                 TimerStart();
@@ -311,18 +370,20 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void RightEvent(View v)
+    private void RightEvent(View view)
     {
         if(_isRight)
         {
             _isLeft = false;
             _isRight = false;
             TimerStop();
+            SetImageButton(TimeType.Right, false);
         }
         else
         {
             _isLeft = false;
             _isRight = true;
+            SetImageButton(TimeType.Right, true);
             if(!_isTimeActive)
             {
                 TimerStart();
@@ -335,9 +396,8 @@ public class MainActivity extends AppCompatActivity {
         TimerStop();
         _isLeft = false;
         _isRight = false;
-        SetTime(TimeType.Left, _leftTime);
-        SetTime(TimeType.Right, _rightTime);
-        SetTime(TimeType.Total, 0);
+        SetImageButton(TimeType.Left, false);
+        SetImageButton(TimeType.Right, false);
         MealInfo info = new MealInfo();
         Date curDate = new Date();
         Calendar cal = Calendar.getInstance();
@@ -354,15 +414,37 @@ public class MainActivity extends AppCompatActivity {
         if(isSaveOk)
         {
             CreateMealInfoItem(info);
+            //计算用餐次数
+            if(DateHelper.IsSameDate(_initDate, curDate, Calendar.DAY_OF_MONTH))
+            {
+                _mealCount++;
+            }
+            else
+            {
+                _initDate = curDate;
+                _mealCount = 0;
+            }
+            TextView tvTodaySum = findViewById(R.id.tvTodaySum);
+            tvTodaySum.setText("今日用餐" + _mealCount + "次");
             _leftTime = 0;
             _rightTime = 0;
+            SetTime(TimeType.Left, _leftTime);
+            SetTime(TimeType.Right, _rightTime);
+            SetTime(TimeType.Total, 0);
             Button btn = (Button)view;
             btn.setVisibility(View.INVISIBLE);
         }
     }
 
-    private void ListItemEvent(View v)
+    private void ListItemEvent(View view)
     {
+        MealInfo info = (MealInfo)view.getTag();
+
+
+
+
+
+        System.out.printf("\non click item: " + info.dateStr  + "\n");
 
     }
 }

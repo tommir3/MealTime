@@ -13,6 +13,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
+            android:id="@+id/part1"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
@@ -29,13 +30,14 @@
 
                 <ImageButton
                     android:id="@+id/btnLeft"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
                     android:layout_gravity="center"
                     android:layout_weight="0"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/left"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:srcCompat="@drawable/left" />
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -113,9 +115,10 @@
 
                     <ImageButton
                         android:id="@+id/btnRight"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_width="120dp"
+                        android:layout_height="120dp"
                         android:layout_weight="0"
+                        android:scaleType="fitCenter"
                         app:srcCompat="@drawable/right"
                         tools:layout_editor_absoluteX="233dp"
                         tools:layout_editor_absoluteY="174dp" />
@@ -182,6 +185,7 @@
         </LinearLayout>
 
         <android.support.v7.widget.CardView
+            android:id="@+id/part2"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1">
@@ -256,6 +260,7 @@
         </android.support.v7.widget.CardView>
 
         <LinearLayout
+            android:id="@+id/part3"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="0.8"
@@ -293,6 +298,7 @@
                     android:layout_gravity="center"
                     android:layout_weight="0"
                     android:text="更多" />
+
             </LinearLayout>
 
             <ScrollView
@@ -315,7 +321,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:visibility="gone">
 
                         <TextView
                             android:id="@+id/textView5"
