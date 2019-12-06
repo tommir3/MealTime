@@ -1,5 +1,6 @@
 package com.mealtime.tom.mealtime;
 
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
@@ -286,7 +287,7 @@ public class MainActivity extends AppCompatActivity {
         layout.setTag(info);
         layout.setOnClickListener(new View.OnClickListener(){
             public void onClick(View v) {
-                ListItemEvent(v);
+                ListItemClickEvent(v);
             }
         });
 
@@ -436,15 +437,79 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void ListItemEvent(View view)
+    private void ListItemClickEvent(View view)
     {
         MealInfo info = (MealInfo)view.getTag();
-
+        Intent infoView = new Intent();
+        infoView.putExtra("MealTimeInfo",info);
+        infoView.setClass(MainActivity.this, MealTimeInfoView.class);
+        startActivityForResult(infoView,1);
 
 
 
 
         System.out.printf("\non click item: " + info.dateStr  + "\n");
 
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        switch(requestCode)
+        {
+            case 1:
+                MealInfo info = (MealInfo)data.getSerializableExtra("MealTimeInfo");
+                LinearLayout list = findViewById(R.id.llMealList);
+                switch(resultCode)
+                {
+                    case -1:
+                        _dbbase.DelMealInfo(info.flowID);
+                        for(int i = 0; i < list.getChildCount(); ++i)
+                        {
+                            LinearLayout item = (LinearLayout)list.getChildAt(i);
+                            MealInfo itemInfo = (MealInfo)item.getTag();
+                            if(info.flowID == itemInfo.flowID)
+                            {
+                                list.removeViewAt(i);
+                                break;
+                            }
+                        }
+                        break;
+                    case 0:
+                        break;
+                    case 1:
+                        break;
+                    case 2:
+                        _dbbase.UpdateMealInfo(info);
+                        for(int i = 0; i < list.getChildCount(); ++i)
+                        {
+                            LinearLayout item = (LinearLayout)list.getChildAt(i);
+                            MealInfo itemInfo = (MealInfo)item.getTag();
+                            if(info.flowID == itemInfo.flowID)
+                            {
+                                item.setTag(info);
+                                //todo:设置修改后的信息
+                                ((TextView)item.getChildAt(0)).setText(info.dateStr);
+                                int leftMinute = info.leftTime / 60;
+                                ((TextView)item.getChildAt(1)).setText("左侧 " + leftMinute + "分钟");
+                                int rightMinute = info.rightTime / 60;
+                                ((TextView)item.getChildAt(2)).setText("右侧 " + rightMinute + "分钟");
+//                                for(int j = 0; j < item.getChildCount(); ++j)
+//                                {
+//                                    View itemChild = item.getChildAt(j);
+//                                    int tmptype = itemChild.getLayerType();
+//
+//                                }
+                                break;
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                break;
+        }
     }
 }

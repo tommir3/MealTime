@@ -1,6 +1,8 @@
 package com.mealtime.tom.mealtime;
 
-public class MealInfo {
+import java.io.Serializable;
+
+public class MealInfo implements Serializable {
     public int flowID;
     public String dateStr;
     public int mealType;
