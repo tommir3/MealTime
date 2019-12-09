@@ -1,8 +1,11 @@
 package com.mealtime.tom.mealtime;
 
+import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
+import android.os.PowerManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.CardView;
@@ -21,36 +24,44 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
-    private MealTimeDatabase _dbbase;
-    private Timer _timer;
-    private int _leftTime = 0;
-    private int _rightTime = 0;
-    private boolean _isLeft = false;
-    private boolean _isRight = false;
-    private boolean _isTimeActive = false;
-    private Date _initDate;
-    private int _mealCount = 0;
-
+    private PowerManager.WakeLock _wakeLock;//安卓锁 程序中未使用
+    private MealTimeDatabase _dbbase;//数据库操作类
+    private Timer _timer;//时间轮询
+    private long _leftBeginSign;//左侧时间开始记录标记
+    private long _rightBeginSign;//右侧时间开始记录标记
+    private int _leftHistoryTime = 0;//左侧历史时间记录 单位秒
+    private int _rightHistoryTime = 0;//右侧历史时间记录 单位秒
+    private int _leftTime = 0;//左侧当前运行时间 单位秒
+    private int _rightTime = 0;//右侧当前运行时间 单位秒
+    private int _totalTime = 0;//用餐总时间
+    private boolean _isLeft = false;//是否左侧正在记录时间
+    private boolean _isRight = false;//是否右侧正在记录时间
+    private boolean _isTimeActive = false;//时间轮询是否开始
+    private Date _todayDate;//当前时间记录
+    private int _mealCount = 0;//今天的用餐次数
+    //时间类型 UI界面使用
     private enum TimeType
     {
         Left,Right,Total
     }
-
+    //时间轮询
     private Handler tHandler = new Handler(){
         public void handleMessage(Message msg) {
             switch (msg.what){
                 case 0:
+                    long curTime = new Date().getTime();
                     if(_isLeft)
                     {
-                        ++_leftTime;
-                        SetTime(TimeType.Left, _leftTime);
+                        _leftTime = (int)((curTime - _leftBeginSign) / 1000);
+                        SetTime(TimeType.Left, _leftHistoryTime + _leftTime);
                     }
                     if(_isRight)
                     {
-                        ++_rightTime;
-                        SetTime(TimeType.Right, _rightTime);
+                        _rightTime = (int)((curTime - _rightBeginSign) / 1000);
+                        SetTime(TimeType.Right, _rightHistoryTime + _rightTime);
                     }
-                    SetTime(TimeType.Total, _leftTime + _rightTime);
+                    _totalTime = _leftHistoryTime + _leftTime + _rightHistoryTime + _rightTime;
+                    SetTime(TimeType.Total, _totalTime);
                     break;
             }
         }
@@ -64,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
         InitUI();
         //test();//测试通过
     }
+
     private void test()//测试通过
     {
         MealInfo[] infos = _dbbase.GetMealInfos();
@@ -94,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
+    //UI初始化
     private void InitUI()
     {
         ImageButton btnLeft = findViewById(R.id.btnLeft);
@@ -133,25 +145,9 @@ public class MainActivity extends AppCompatActivity {
                 part3.setLayoutParams(lp);
             }
         });
-        MealInfo[] infos = _dbbase.GetMealInfos();
-        _mealCount = 0;
-        _initDate = new Date();
-        if(infos != null)
-        {
-            CreateMealInfos(infos);
-            for(int i = 0; i <  infos.length; ++i)
-            {
-                Date cmpDate = DateHelper.StringToDate(infos[i].dateStr);
-                if(DateHelper.IsSameDate(_initDate,cmpDate, Calendar.DAY_OF_MONTH))
-                {
-                    _mealCount++;
-                }
-            }
-        }
-        TextView tvTodaySum = findViewById(R.id.tvTodaySum);
-        tvTodaySum.setText("今日用餐" + _mealCount + "次");
+        RefreshTodayMeal();
     }
-
+    //时间轮询开始
     private void TimerStart()
     {
         try
@@ -181,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
             System.out.printf("\n"+ err.getMessage() +"\n");
         }
     }
-
+    //时间轮询结束
     private void TimerStop()
     {
         _isTimeActive = false;
@@ -191,44 +187,37 @@ public class MainActivity extends AppCompatActivity {
             _timer = null;
         }
     }
-
+    //设置时间数值，显示在界面中
     private void SetTime(TimeType type, int val)
     {
-        int hour = val / (60 * 60);
         int minute = val / 60;
         int second = val % 60;
-        SetTime(type, hour, minute, second);
+        SetTime(type, minute, second);
     }
-
-    private void SetTime(TimeType type, int hour, int minute, int second)
+    //设置时间数值，显示在界面中
+    private void SetTime(TimeType type, int minute, int second)
     {
-        String hourStr = TimeNumberToString(hour);
         String minuteStr = TimeNumberToString(minute);
         String secondStr = TimeNumberToString(second);
-        TextView tvHour = null;
         TextView tvMinute = null;
         TextView tvSecond = null;
         switch(type)
         {
             case Left:
-                tvHour = findViewById(R.id.tvLeftHour);
                 tvMinute = findViewById(R.id.tvLeftMinute);
                 tvSecond = findViewById(R.id.tvLeftSecond);
                 break;
             case Right:
-                tvHour = findViewById(R.id.tvRightHour);
                 tvMinute = findViewById(R.id.tvRightMinute);
                 tvSecond = findViewById(R.id.tvRightSecond);
                 break;
             case Total:
-                tvHour = findViewById(R.id.tvHour);
                 tvMinute = findViewById(R.id.tvMinute);
                 tvSecond = findViewById(R.id.tvSecond);
                 break;
         }
         try
         {
-            tvHour.setText(hourStr);
             tvMinute.setText(minuteStr);
             tvSecond.setText(secondStr);
         }
@@ -237,7 +226,7 @@ public class MainActivity extends AppCompatActivity {
             System.out.printf("\n" + err.getMessage() + "\n");
         }
     }
-
+    //时间数值转换为字符串
     private String TimeNumberToString(int val)
     {
         String result;
@@ -262,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
         }
         return result;
     }
-
+    //批量创建用餐信息（向列表中添加用餐信息）
     private void CreateMealInfos(MealInfo[] infos)
     {
         if(infos != null)
@@ -273,7 +262,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
+    //创建用餐信息（向列表中添加用餐信息）
     private void CreateMealInfoItem(MealInfo info)
     {
         LinearLayout layout = new LinearLayout(this.getApplicationContext());
@@ -291,25 +280,25 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        tvDate.setTextSize(20);
+        tvDate.setTextSize(18);
         LinearLayout.LayoutParams dateLP = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,LinearLayout.LayoutParams.WRAP_CONTENT,1);
         dateLP.setMargins(25,0,0,0);
         tvDate.setLayoutParams(dateLP);
         tvDate.setText(info.dateStr);//todo:设置时间，可能格式有变动需要修改
 
-        tvLeft.setTextSize(20);
+        tvLeft.setTextSize(18);
         LinearLayout.LayoutParams leftLP = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,LinearLayout.LayoutParams.WRAP_CONTENT,1);
         leftLP.setMargins(0,0,0,0);
         tvLeft.setLayoutParams(leftLP);
-        int leftMinute = info.leftTime / 60;
-        tvLeft.setText("左侧 " +leftMinute + "分钟");
+        int leftMinute = MealInfo.SecondToMinute(info.leftTime);
+        tvLeft.setText("左 " +leftMinute + "分");
 
-        tvRight.setTextSize(20);
+        tvRight.setTextSize(18);
         LinearLayout.LayoutParams rightLP = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,LinearLayout.LayoutParams.WRAP_CONTENT,1);
         rightLP.setMargins(0,0,0,0);
         tvRight.setLayoutParams(rightLP);
-        int rightMinute = info.rightTime / 60;
-        tvRight.setText("右侧 " + rightMinute + "分钟");
+        int rightMinute = MealInfo.SecondToMinute(info.rightTime);
+        tvRight.setText("右 " + rightMinute + "分");
 
         LinearLayout list = findViewById(R.id.llMealList);
         layout.addView(tvDate);
@@ -317,7 +306,7 @@ public class MainActivity extends AppCompatActivity {
         layout.addView(tvRight);
         list.addView(layout,0);
     }
-
+    //设置左右图片按钮的图片
     private void SetImageButton(TimeType type, boolean isActive)
     {
         ImageButton btnLeft = findViewById(R.id.btnLeft);
@@ -349,7 +338,34 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
+    //设置TextView的显示文本内容
+    private void SetTextViewText(int id, String text)
+    {
+        TextView tvSum = findViewById(id);
+        tvSum.setText(text);
+    }
+    //刷新当天用餐数量信息
+    private void RefreshTodayMeal()
+    {
+        MealInfo[] infos = _dbbase.GetMealInfos();
+        _mealCount = 0;
+        _todayDate = new Date();
+        if(infos != null)
+        {
+            CreateMealInfos(infos);
+            for(int i = 0; i <  infos.length; ++i)
+            {
+                Date cmpDate = DateHelper.StringToDate(infos[i].dateStr);
+                if(DateHelper.IsSameDate(_todayDate,cmpDate, Calendar.DAY_OF_MONTH))
+                {
+                    _mealCount++;
+                }
+            }
+        }
+        TextView tvTodaySum = findViewById(R.id.tvTodaySum);
+        tvTodaySum.setText("今日用餐" + _mealCount + "次");
+    }
+    //左侧按钮点击事件
     private void LeftEvent(View view)
     {
         if(_isLeft)
@@ -363,6 +379,8 @@ public class MainActivity extends AppCompatActivity {
         {
             _isLeft = true;
             _isRight = false;
+            _leftBeginSign = new Date().getTime();
+            _leftHistoryTime += _leftTime;
             SetImageButton(TimeType.Left, true);
             if(!_isTimeActive)
             {
@@ -370,7 +388,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
+    //右侧按钮点击事件
     private void RightEvent(View view)
     {
         if(_isRight)
@@ -384,6 +402,8 @@ public class MainActivity extends AppCompatActivity {
         {
             _isLeft = false;
             _isRight = true;
+            _rightBeginSign = new Date().getTime();
+            _rightHistoryTime += _rightTime;
             SetImageButton(TimeType.Right, true);
             if(!_isTimeActive)
             {
@@ -391,7 +411,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
+    //结束时间记录事件
     private void StopEvent(View view)
     {
         TimerStop();
@@ -406,29 +426,31 @@ public class MainActivity extends AppCompatActivity {
         int curYear = cal.get(Calendar.YEAR);
         int curMonth = cal.get(Calendar.MONTH) + 1;
         int curDay = cal.get(Calendar.DAY_OF_MONTH);
-        int curHour = cal.get(Calendar.HOUR);
+        int curHour = cal.get(Calendar.HOUR_OF_DAY);
         int curMinute = cal.get(Calendar.MINUTE);
         info.dateStr = curYear + "-" + curMonth + "-" + curDay + " " + curHour + ":" + curMinute;
-        info.leftTime = _leftTime;
-        info.rightTime = _rightTime;
+        info.leftTime = _leftHistoryTime + _leftTime;
+        info.rightTime = _rightHistoryTime + _rightTime;
+        info.totalTime = _totalTime;
         boolean isSaveOk = _dbbase.AddMealInfo(info);
         if(isSaveOk)
         {
             CreateMealInfoItem(info);
             //计算用餐次数
-            if(DateHelper.IsSameDate(_initDate, curDate, Calendar.DAY_OF_MONTH))
+            if(DateHelper.IsSameDate(_todayDate, curDate, Calendar.DAY_OF_MONTH))
             {
                 _mealCount++;
             }
             else
             {
-                _initDate = curDate;
+                _todayDate = curDate;
                 _mealCount = 0;
             }
-            TextView tvTodaySum = findViewById(R.id.tvTodaySum);
-            tvTodaySum.setText("今日用餐" + _mealCount + "次");
+            SetTextViewText(R.id.tvTodaySum, "今日用餐" + _mealCount + "次");
             _leftTime = 0;
             _rightTime = 0;
+            _leftBeginSign = 0;
+            _rightBeginSign = 0;
             SetTime(TimeType.Left, _leftTime);
             SetTime(TimeType.Right, _rightTime);
             SetTime(TimeType.Total, 0);
@@ -436,7 +458,7 @@ public class MainActivity extends AppCompatActivity {
             btn.setVisibility(View.INVISIBLE);
         }
     }
-
+    //用餐信息列表中一条信息的点击事件
     private void ListItemClickEvent(View view)
     {
         MealInfo info = (MealInfo)view.getTag();
@@ -444,12 +466,6 @@ public class MainActivity extends AppCompatActivity {
         infoView.putExtra("MealTimeInfo",info);
         infoView.setClass(MainActivity.this, MealTimeInfoView.class);
         startActivityForResult(infoView,1);
-
-
-
-
-        System.out.printf("\non click item: " + info.dateStr  + "\n");
-
     }
 
     @Override
@@ -471,6 +487,8 @@ public class MainActivity extends AppCompatActivity {
                             if(info.flowID == itemInfo.flowID)
                             {
                                 list.removeViewAt(i);
+                                _mealCount--;
+                                SetTextViewText(R.id.tvTodaySum, "今日用餐" + _mealCount + "次");
                                 break;
                             }
                         }
@@ -488,18 +506,12 @@ public class MainActivity extends AppCompatActivity {
                             if(info.flowID == itemInfo.flowID)
                             {
                                 item.setTag(info);
-                                //todo:设置修改后的信息
+                                //设置修改后的信息
                                 ((TextView)item.getChildAt(0)).setText(info.dateStr);
-                                int leftMinute = info.leftTime / 60;
-                                ((TextView)item.getChildAt(1)).setText("左侧 " + leftMinute + "分钟");
-                                int rightMinute = info.rightTime / 60;
-                                ((TextView)item.getChildAt(2)).setText("右侧 " + rightMinute + "分钟");
-//                                for(int j = 0; j < item.getChildCount(); ++j)
-//                                {
-//                                    View itemChild = item.getChildAt(j);
-//                                    int tmptype = itemChild.getLayerType();
-//
-//                                }
+                                int leftMinute = MealInfo.SecondToMinute(info.leftTime);
+                                ((TextView)item.getChildAt(1)).setText("左 " + leftMinute + "分");
+                                int rightMinute = MealInfo.SecondToMinute(info.rightTime);
+                                ((TextView)item.getChildAt(2)).setText("右 " + rightMinute + "分");
                                 break;
                             }
                         }
@@ -510,6 +522,31 @@ public class MainActivity extends AppCompatActivity {
                 break;
             default:
                 break;
+        }
+    }
+
+    //获取电源锁，保持该服务在屏幕熄灭时仍然获取CPU时，保持运行
+    @SuppressLint("InvalidWakeLockTag")
+    private void AcquireWakeLock()
+    {
+        if (null == _wakeLock)
+        {
+            PowerManager pm = (PowerManager)this.getSystemService(Context.POWER_SERVICE);
+            _wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE, "PostLocationService");
+            if (null != _wakeLock)
+            {
+                _wakeLock.acquire();
+            }
+        }
+    }
+
+    //释放设备电源锁
+    private void ReleaseWakeLock()
+    {
+        if (null != _wakeLock)
+        {
+            _wakeLock.release();
+            _wakeLock = null;
         }
     }
 }

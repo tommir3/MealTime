@@ -19,4 +19,6 @@
         <activity android:name=".MealTimeInfoView"></activity>
     </application>
 
-</manifest>
+    <!--<uses-permission android:name="android.permission.WAKE_LOCK"/>-->
+    <!--<uses-permission android:name="android.permission.DEVICE_POWER"/>-->
+    </manifest>

@@ -28,7 +28,7 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
     }
-
+    //创建用餐信息表
     private void CreateMealTable(SQLiteDatabase db)
     {
         try
@@ -63,10 +63,10 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
             System.out.printf(err.getMessage());
         }
     }
-
+    //添加用餐信息
     public boolean AddMealInfo(MealInfo info)
     {
-        boolean result = false;
+        boolean result;
         try
         {
             ContentValues values = new ContentValues();
@@ -87,7 +87,7 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
         }
         return result;
     }
-
+    //获指定ID用餐信息
     public MealInfo GetMealInfo(int id)
     {
         MealInfo result = null;
@@ -110,7 +110,7 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
         }
         return result;
     }
-
+    //更新指定ID用餐信息
     public boolean UpdateMealInfo(MealInfo info)
     {
         boolean result;
@@ -134,7 +134,7 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
         }
         return result;
     }
-
+    //删除指定ID用餐信息
     public boolean DelMealInfo(int id)
     {
         boolean result;
@@ -151,7 +151,7 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
         }
         return result;
     }
-
+    //获取所有用餐信息
     public MealInfo[] GetMealInfos()
     {
         MealInfo[] result = null;
@@ -171,7 +171,7 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
         }
         return result;
     }
-
+    //从游标中读取用餐信息
     private MealInfo[] CursorToMealInfos(Cursor ptr)
     {
         MealInfo[] result = null;

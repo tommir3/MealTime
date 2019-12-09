@@ -11,7 +11,7 @@ import java.io.Serializable;
 
 public class MealTimeInfoView extends AppCompatActivity {
 
-    private MealInfo _info;
+    private MealInfo _info;//当前用餐信息
     private int _resultCode = 0;//-1：删除；0：返回；1：保存；2：修改
 
     @Override
@@ -40,7 +40,7 @@ public class MealTimeInfoView extends AppCompatActivity {
         setResult(_resultCode,intent);
         finish();
     }
-
+    //初始化UI
     private void InitUI()
     {
         Button btnBack = findViewById(R.id.btnBack);
@@ -68,21 +68,21 @@ public class MealTimeInfoView extends AppCompatActivity {
             }
         });
     }
-
+    //设置用餐信息
     private void SetInfo(MealInfo info)
     {
         EditText etDate = findViewById(R.id.etDate);
         etDate.setText(info.dateStr);
         EditText etLeft = findViewById(R.id.etLeft);
-        int leftMinute = info.leftTime / 60;
+        int leftMinute = MealInfo.SecondToMinute(info.leftTime);
         etLeft.setText(String.valueOf(leftMinute));
         EditText etRight = findViewById(R.id.etRight);
-        int rightMinute = info.rightTime / 60;
+        int rightMinute = MealInfo.SecondToMinute(info.rightTime);
         etRight.setText(String.valueOf(rightMinute));
         EditText etRemark = findViewById(R.id.etRemark);
         etRemark.setText(info.remark);
     }
-
+    //获取用餐信息
     private MealInfo GetInfo()
     {
         EditText etDate = findViewById(R.id.etDate);

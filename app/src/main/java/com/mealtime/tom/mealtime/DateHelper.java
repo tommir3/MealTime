@@ -93,6 +93,23 @@ public class DateHelper {
         return result;
     }
 
+    public static int GetSecondBetweenDate(Date minDate, Date maxDate)
+    {
+        int result = 0;
+        try
+        {
+            long minNum = minDate.getTime();
+            long maxNum = maxDate.getTime();
+            double val = (maxNum - minNum) / 1000;
+            result = (int)Math.ceil(val);
+        }
+        catch(Exception err)
+        {
+            result = -1;
+        }
+        return result;
+    }
+
     public static boolean CompareSameDay()
     {
         return false;

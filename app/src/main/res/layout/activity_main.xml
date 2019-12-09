@@ -53,22 +53,6 @@
                         android:orientation="horizontal">
 
                         <TextView
-                            android:id="@+id/tvLeftHour"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="0"
-                            android:text="00"
-                            android:textSize="24sp" />
-
-                        <TextView
-                            android:id="@+id/textView15"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="0"
-                            android:text=":"
-                            android:textSize="24sp" />
-
-                        <TextView
                             android:id="@+id/tvLeftMinute"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -137,22 +121,6 @@
                             android:orientation="horizontal">
 
                             <TextView
-                                android:id="@+id/tvRightHour"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="0"
-                                android:text="00"
-                                android:textSize="24sp" />
-
-                            <TextView
-                                android:id="@+id/textView10"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="0"
-                                android:text=":"
-                                android:textSize="24sp" />
-
-                            <TextView
                                 android:id="@+id/tvRightMinute"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -202,28 +170,12 @@
                     android:orientation="horizontal">
 
                     <TextView
-                        android:id="@+id/tvHour"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="0"
-                        android:text="00"
-                        android:textSize="60sp" />
-
-                    <TextView
-                        android:id="@+id/textView8"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="0"
-                        android:text=":"
-                        android:textSize="60sp" />
-
-                    <TextView
                         android:id="@+id/tvMinute"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="0"
                         android:text="00"
-                        android:textSize="60sp" />
+                        android:textSize="65sp" />
 
                     <TextView
                         android:id="@+id/textView9"
@@ -231,7 +183,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="0"
                         android:text=":"
-                        android:textSize="60sp" />
+                        android:textSize="65sp" />
 
                     <TextView
                         android:id="@+id/tvSecond"
@@ -239,7 +191,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="0"
                         android:text="00"
-                        android:textSize="60sp"
+                        android:textSize="65sp"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintLeft_toLeftOf="parent"
                         app:layout_constraintRight_toRightOf="parent"
@@ -322,7 +274,7 @@
                         android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:orientation="horizontal"
-                        android:visibility="visible">
+                        android:visibility="gone">
 
                         <TextView
                             android:id="@+id/textView5"
@@ -331,7 +283,7 @@
                             android:layout_marginLeft="8dp"
                             android:layout_weight="1"
                             android:text="12月03日 17:30"
-                            android:textSize="20sp" />
+                            android:textSize="18sp" />
 
                         <TextView
                             android:id="@+id/textView7"
@@ -339,7 +291,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="左侧 4分钟"
-                            android:textSize="20sp" />
+                            android:textSize="18sp" />
 
                         <TextView
                             android:id="@+id/textView11"
@@ -347,7 +299,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="右侧 10分钟"
-                            android:textSize="20sp" />
+                            android:textSize="18sp" />
                     </LinearLayout>
                 </LinearLayout>
             </ScrollView>
