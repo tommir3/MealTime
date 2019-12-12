@@ -13,7 +13,7 @@ import java.util.List;
 public class MealTimeDatabase extends SQLiteOpenHelper {
 
     private final static String _mealTableName = "MealInfo";
-    private final static int _mealDbVersion = 3;
+    private final static int _mealDbVersion = 8;
 
     public MealTimeDatabase(Context context)
     {
@@ -26,8 +26,22 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
     }
 
     @Override
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
+    {
+        MealInfo[] infos = GetMealInfos(db);
+        if(infos != null)
+        {
+            for(int i = 0; i < infos.length; ++i)
+            {
+                String convertStr = DateHelper.DateToString(DateHelper.StringToDate(infos[i].dateStr));
+                if(convertStr != infos[i].dateStr)
+                {
+                    infos[i].dateStr = convertStr;
+                    UpdateMealInfo(db, infos[i]);
 
+                }
+            }
+        }
     }
     //创建用餐信息表
     private void CreateMealTable(SQLiteDatabase db)
@@ -114,26 +128,7 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
     //更新指定ID用餐信息
     public boolean UpdateMealInfo(MealInfo info)
     {
-        boolean result;
-        try
-        {
-            ContentValues values = new ContentValues();
-            values.put("date",info.dateStr);
-            values.put("type",info.mealType);
-            values.put("leftValue",info.leftTime);
-            values.put("rightValue",info.rightTime);
-            values.put("value",info.totalTime);
-            values.put("remark",info.remark);
-            SQLiteDatabase db = getWritableDatabase();
-            int bakVal = db.update(_mealTableName,values,"id=?",new String[]{ Integer.toString(info.flowID) });
-            result = (bakVal == 1) ? true : false;
-        }
-        catch(Exception err)
-        {
-            result = false;
-            System.out.printf(err.getMessage());
-        }
-        return result;
+        return UpdateMealInfo(getReadableDatabase(), info);
     }
     //删除指定ID用餐信息
     public boolean DelMealInfo(int id)
@@ -155,10 +150,37 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
     //获取所有用餐信息
     public MealInfo[] GetMealInfos()
     {
+        return GetMealInfos(getReadableDatabase());
+    }
+    //更新指定ID用餐信息
+    private boolean UpdateMealInfo(SQLiteDatabase db, MealInfo info)
+    {
+        boolean result;
+        try
+        {
+            ContentValues values = new ContentValues();
+            values.put("date",info.dateStr);
+            values.put("type",info.mealType);
+            values.put("leftValue",info.leftTime);
+            values.put("rightValue",info.rightTime);
+            values.put("value",info.totalTime);
+            values.put("remark",info.remark);
+            int bakVal = db.update(_mealTableName,values,"id=?",new String[]{ Integer.toString(info.flowID) });
+            result = (bakVal == 1) ? true : false;
+        }
+        catch(Exception err)
+        {
+            result = false;
+            System.out.printf(err.getMessage());
+        }
+        return result;
+    }
+    //获取所有用餐信息
+    private MealInfo[] GetMealInfos(SQLiteDatabase db)
+    {
         MealInfo[] result = null;
         try
         {
-            SQLiteDatabase db = getReadableDatabase();
             Cursor bakData = db.query(_mealTableName,null,"",null,"","","datetime(date)","");
             if(bakData != null)
             {

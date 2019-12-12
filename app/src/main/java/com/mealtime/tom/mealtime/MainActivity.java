@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean _isLeft = false;//是否左侧正在记录时间
     private boolean _isRight = false;//是否右侧正在记录时间
     private boolean _isTimeActive = false;//时间轮询是否开始
+    private Date _recordTime;
     private Date _todayDate;//当前时间记录
     private int _mealCount = 0;//今天的用餐次数
     //时间类型 UI界面使用
@@ -75,10 +76,98 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         _dbbase = new MealTimeDatabase(this.getApplicationContext());
-        test1();
         InitUI();
         //test();//测试通过
         //test1();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        try
+        {
+
+        }
+        catch(Exception err)
+        {
+            System.out.printf("\n" + err.getMessage() + "\n");
+        }
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        switch(requestCode)
+        {
+            case 1://从页面MealInfoView返回
+                MealInfo info = (MealInfo)data.getSerializableExtra("MealTimeInfo");
+                LinearLayout list = findViewById(R.id.llMealList);
+                switch(resultCode)
+                {
+                    case -1://删除
+                        _dbbase.DelMealInfo(info.flowID);
+                        for(int i = 0; i < list.getChildCount(); ++i)
+                        {
+                            LinearLayout item = (LinearLayout)list.getChildAt(i);
+                            MealInfo itemInfo = (MealInfo)item.getTag();
+                            if(info.flowID == itemInfo.flowID)
+                            {
+                                list.removeViewAt(i);
+                                _mealCount--;
+                                SetTextViewText(R.id.tvTodaySum, "今日用餐" + _mealCount + "次");
+                                break;
+                            }
+                        }
+                        break;
+                    case 0://返回
+                        break;
+                    case 1://保存
+                        break;
+                    case 2://更新
+                        _dbbase.UpdateMealInfo(info);
+                        for(int i = 0; i < list.getChildCount(); ++i)
+                        {
+                            LinearLayout item = (LinearLayout)list.getChildAt(i);
+                            MealInfo itemInfo = (MealInfo)item.getTag();
+                            if(info.flowID == itemInfo.flowID)
+                            {
+                                item.setTag(info);
+                                String itemDateStr = String.valueOf(((TextView)item.getChildAt(0)).getText());
+                                //设置修改后的信息
+                                ((TextView)item.getChildAt(0)).setText(info.dateStr);
+                                int leftMinute = MealInfo.SecondToMinute(info.leftTime);
+                                ((TextView)item.getChildAt(1)).setText("左 " + leftMinute + "分");
+                                int rightMinute = MealInfo.SecondToMinute(info.rightTime);
+                                ((TextView)item.getChildAt(2)).setText("右 " + rightMinute + "分");
+                                if(itemDateStr != info.dateStr)
+                                {
+                                    //日期改变，调整显示位置
+                                    MealInfo[] sortInfos = _dbbase.GetMealInfos();
+                                    if(sortInfos != null)
+                                    {
+                                        for(int j = 0; j < sortInfos.length; ++j)
+                                        {
+                                            if(sortInfos[j].flowID == info.flowID)
+                                            {
+                                                int newIdx = sortInfos.length - j - 1;
+                                                list.removeViewAt(i);
+                                                list.addView(item, newIdx);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            default:
+                break;
+        }
     }
 
     private void test1()//日期添加后读取排序不对
@@ -429,9 +518,14 @@ public class MainActivity extends AppCompatActivity {
         {
             _isLeft = true;
             _isRight = false;
-            _leftBeginSign = new Date().getTime();
+            Date curDate = new Date();
+            _leftBeginSign = curDate.getTime();
             _leftHistoryTime += _leftTime;
             SetImageButton(TimeType.Left, true);
+            if(_recordTime == null)
+            {
+                _recordTime = curDate;
+            }
             if(!_isTimeActive)
             {
                 TimerStart();
@@ -452,9 +546,14 @@ public class MainActivity extends AppCompatActivity {
         {
             _isLeft = false;
             _isRight = true;
-            _rightBeginSign = new Date().getTime();
+            Date curDate = new Date();
+            _rightBeginSign = curDate.getTime();
             _rightHistoryTime += _rightTime;
             SetImageButton(TimeType.Right, true);
+            if(_recordTime == null)
+            {
+                _recordTime = curDate;
+            }
             if(!_isTimeActive)
             {
                 TimerStart();
@@ -470,9 +569,8 @@ public class MainActivity extends AppCompatActivity {
         SetImageButton(TimeType.Left, false);
         SetImageButton(TimeType.Right, false);
         MealInfo info = new MealInfo();
-        Date curDate = new Date();
         Calendar cal = Calendar.getInstance();
-        cal.setTime(curDate);
+        cal.setTime(_recordTime);
         int curYear = cal.get(Calendar.YEAR);
         int curMonth = cal.get(Calendar.MONTH) + 1;
         int curDay = cal.get(Calendar.DAY_OF_MONTH);
@@ -487,13 +585,13 @@ public class MainActivity extends AppCompatActivity {
         {
             CreateMealInfoItem(info);
             //计算用餐次数
-            if(DateHelper.IsSameDate(_todayDate, curDate, Calendar.DAY_OF_MONTH))
+            if(DateHelper.IsSameDate(_todayDate, _recordTime, Calendar.DAY_OF_MONTH))
             {
                 _mealCount++;
             }
             else
             {
-                _todayDate = curDate;
+                _todayDate = _recordTime;
                 _mealCount = 0;
             }
             SetTextViewText(R.id.tvTodaySum, "今日用餐" + _mealCount + "次");
@@ -507,6 +605,7 @@ public class MainActivity extends AppCompatActivity {
             Button btn = (Button)view;
             btn.setVisibility(View.INVISIBLE);
         }
+        _recordTime = null;
     }
     //用餐信息列表中一条信息的点击事件
     private void ListItemClickEvent(View view)
@@ -516,71 +615,6 @@ public class MainActivity extends AppCompatActivity {
         infoView.putExtra("MealTimeInfo",info);
         infoView.setClass(MainActivity.this, MealTimeInfoView.class);
         startActivityForResult(infoView,1);
-    }
-
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data)
-    {
-        switch(requestCode)
-        {
-            case 1:
-                MealInfo info = (MealInfo)data.getSerializableExtra("MealTimeInfo");
-                LinearLayout list = findViewById(R.id.llMealList);
-                switch(resultCode)
-                {
-                    case -1:
-                        _dbbase.DelMealInfo(info.flowID);
-                        for(int i = 0; i < list.getChildCount(); ++i)
-                        {
-                            LinearLayout item = (LinearLayout)list.getChildAt(i);
-                            MealInfo itemInfo = (MealInfo)item.getTag();
-                            if(info.flowID == itemInfo.flowID)
-                            {
-                                list.removeViewAt(i);
-                                _mealCount--;
-                                SetTextViewText(R.id.tvTodaySum, "今日用餐" + _mealCount + "次");
-                                break;
-                            }
-                        }
-                        break;
-                    case 0:
-                        break;
-                    case 1:
-                        break;
-                    case 2:
-                        _dbbase.UpdateMealInfo(info);
-                        for(int i = 0; i < list.getChildCount(); ++i)
-                        {
-                            LinearLayout item = (LinearLayout)list.getChildAt(i);
-                            MealInfo itemInfo = (MealInfo)item.getTag();
-                            if(info.flowID == itemInfo.flowID)
-                            {
-                                item.setTag(info);
-                                String itemDateStr = String.valueOf(((TextView)item.getChildAt(0)).getText());
-                                //设置修改后的信息
-                                ((TextView)item.getChildAt(0)).setText(info.dateStr);
-                                int leftMinute = MealInfo.SecondToMinute(info.leftTime);
-                                ((TextView)item.getChildAt(1)).setText("左 " + leftMinute + "分");
-                                int rightMinute = MealInfo.SecondToMinute(info.rightTime);
-                                ((TextView)item.getChildAt(2)).setText("右 " + rightMinute + "分");
-                                if(itemDateStr != info.dateStr)
-                                {
-                                    //todo:日期改变，调整显示位置
-                                    MealInfo[] sortInfos = _dbbase.GetMealInfos();
-
-                                }
-                                break;
-                            }
-                        }
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            default:
-                break;
-        }
     }
 
     //获取电源锁，保持该服务在屏幕熄灭时仍然获取CPU时，保持运行
