@@ -110,11 +110,6 @@ public class DateHelper {
         return result;
     }
 
-    public static boolean CompareSameDay()
-    {
-        return false;
-    }
-
     public static boolean IsSameDate(String cmp1, String cmp2, int type)
     {
         Date date1 = StringToDate(cmp1);

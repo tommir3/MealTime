@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class MealTimeDatabase extends SQLiteOpenHelper {
@@ -196,6 +197,7 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
                 }
                 if(list.size() > 0)
                 {
+                    Collections.sort(list);
                     result = new MealInfo[list.size()];
                     for(int i = 0; i < list.size(); ++i)
                     {

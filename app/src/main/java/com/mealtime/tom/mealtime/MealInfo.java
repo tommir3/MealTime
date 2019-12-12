@@ -1,8 +1,9 @@
 package com.mealtime.tom.mealtime;
 
 import java.io.Serializable;
+import java.util.Date;
 
-public class MealInfo implements Serializable {
+public class MealInfo implements Serializable, Comparable<MealInfo> {
     public int flowID;
     public String dateStr;
     public int mealType;
@@ -33,5 +34,22 @@ public class MealInfo implements Serializable {
     public static int MinuteToSecond(int val)
     {
         return val * 60;
+    }
+
+    @Override
+    public int compareTo(MealInfo o) {
+        int result;
+        try
+        {
+            Date curDate = DateHelper.StringToDate(this.dateStr);
+            Date oDaTE = DateHelper.StringToDate(o.dateStr);
+            result = curDate.compareTo(oDaTE);
+        }
+        catch(Exception err)
+        {
+            result = 0;
+            System.out.printf("\n" + err.getMessage() + "\n");
+        }
+        return result;
     }
 }

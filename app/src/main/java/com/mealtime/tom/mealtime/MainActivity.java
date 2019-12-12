@@ -17,8 +17,11 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -72,8 +75,55 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         _dbbase = new MealTimeDatabase(this.getApplicationContext());
+        test1();
         InitUI();
         //test();//测试通过
+        //test1();
+    }
+
+    private void test1()//日期添加后读取排序不对
+    {
+        MealInfo info = new MealInfo();
+        info.dateStr = "2019-12-11 0:26";
+        info.leftTime = 16;
+        info.rightTime = 3;
+        info.remark = "测试数据";
+        _dbbase.AddMealInfo(info);
+        info = new MealInfo();
+        info.dateStr = "2019-12-11 4:7";
+        info.leftTime = 0;
+        info.rightTime = 1;
+        info.remark = "测试数据";
+        _dbbase.AddMealInfo(info);
+        info = new MealInfo();
+        info.dateStr = "2019-12-11 17:11";
+        info.leftTime = 11;
+        info.rightTime = 5;
+        info.remark = "测试数据";
+        _dbbase.AddMealInfo(info);
+        info = new MealInfo();
+        info.dateStr = "2019-12-11 20:22";
+        info.leftTime = 12;
+        info.rightTime = 12;
+        info.remark = "测试数据";
+        _dbbase.AddMealInfo(info);
+        MealInfo[] infos = _dbbase.GetMealInfos();
+        info = new MealInfo();
+        info.dateStr = "2019-12-12 1:5";
+        info.leftTime = 10;
+        info.rightTime = 10;
+        info.remark = "测试数据";
+        _dbbase.AddMealInfo(info);
+        infos = _dbbase.GetMealInfos();
+        List<MealInfo> list = new ArrayList();
+        for(int i = 0; i < infos.length; ++i)
+        {
+            list.add(infos[i]);
+        }
+        Collections.sort(list);
+
+        int a = 1 + 1;
+
     }
 
     private void test()//测试通过
@@ -428,7 +478,7 @@ public class MainActivity extends AppCompatActivity {
         int curDay = cal.get(Calendar.DAY_OF_MONTH);
         int curHour = cal.get(Calendar.HOUR_OF_DAY);
         int curMinute = cal.get(Calendar.MINUTE);
-        info.dateStr = curYear + "-" + curMonth + "-" + curDay + " " + curHour + ":" + curMinute;
+        info.dateStr = curYear + "-" + TimeNumberToString(curMonth) + "-" + TimeNumberToString(curDay) + " " + TimeNumberToString(curHour) + ":" + TimeNumberToString(curMinute);
         info.leftTime = _leftHistoryTime + _leftTime;
         info.rightTime = _rightHistoryTime + _rightTime;
         info.totalTime = _totalTime;
@@ -468,6 +518,7 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(infoView,1);
     }
 
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data)
     {
@@ -506,12 +557,19 @@ public class MainActivity extends AppCompatActivity {
                             if(info.flowID == itemInfo.flowID)
                             {
                                 item.setTag(info);
+                                String itemDateStr = String.valueOf(((TextView)item.getChildAt(0)).getText());
                                 //设置修改后的信息
                                 ((TextView)item.getChildAt(0)).setText(info.dateStr);
                                 int leftMinute = MealInfo.SecondToMinute(info.leftTime);
                                 ((TextView)item.getChildAt(1)).setText("左 " + leftMinute + "分");
                                 int rightMinute = MealInfo.SecondToMinute(info.rightTime);
                                 ((TextView)item.getChildAt(2)).setText("右 " + rightMinute + "分");
+                                if(itemDateStr != info.dateStr)
+                                {
+                                    //todo:日期改变，调整显示位置
+                                    MealInfo[] sortInfos = _dbbase.GetMealInfos();
+
+                                }
                                 break;
                             }
                         }
