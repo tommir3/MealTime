@@ -36,7 +36,6 @@ public class MainActivity extends AppCompatActivity {
     private int _rightHistoryTime = 0;//右侧历史时间记录 单位秒
     private int _leftTime = 0;//左侧当前运行时间 单位秒
     private int _rightTime = 0;//右侧当前运行时间 单位秒
-    private int _totalTime = 0;//用餐总时间
     private boolean _isLeft = false;//是否左侧正在记录时间
     private boolean _isRight = false;//是否右侧正在记录时间
     private boolean _isTimeActive = false;//时间轮询是否开始
@@ -64,8 +63,8 @@ public class MainActivity extends AppCompatActivity {
                         _rightTime = (int)((curTime - _rightBeginSign) / 1000);
                         SetTime(TimeType.Right, _rightHistoryTime + _rightTime);
                     }
-                    _totalTime = _leftHistoryTime + _leftTime + _rightHistoryTime + _rightTime;
-                    SetTime(TimeType.Total, _totalTime);
+                    int mealTotalTime = _leftHistoryTime + _leftTime + _rightHistoryTime + _rightTime;
+                    SetTime(TimeType.Total, mealTotalTime);
                     break;
             }
         }
@@ -79,13 +78,58 @@ public class MainActivity extends AppCompatActivity {
         InitUI();
         //test();//测试通过
         //test1();
+        Date curDay = null;
+        if(savedInstanceState != null)
+        {
+            //实例已经存在，重新加载
+            _isTimeActive = savedInstanceState.getBoolean("isTimeActive");
+            _isLeft = savedInstanceState.getBoolean("isLeft");
+            _isRight = savedInstanceState.getBoolean("isRight");
+            _leftBeginSign = savedInstanceState.getLong("leftBeginSign");
+            _leftBeginSign = savedInstanceState.getLong("rightBeginSign");
+            _leftHistoryTime = savedInstanceState.getInt("leftHistoryTime");
+            _rightHistoryTime = savedInstanceState.getInt("rightHistoryTime");
+            _leftTime = savedInstanceState.getInt("leftTime");
+            _rightTime = savedInstanceState.getInt("rightTime");
+            String recdTimeStr = savedInstanceState.getString("recordTime");
+            if(recdTimeStr != null)
+            {
+                _recordTime = DateHelper.StringToDate(recdTimeStr);
+            }
+            String todayDateStr = savedInstanceState.getString("todayDate");
+            if(todayDateStr != null)
+            {
+                curDay = DateHelper.StringToDate(todayDateStr);
+            }
+            SetImageButton(TimeType.Left, !_isLeft);
+            SetImageButton(TimeType.Right, !_isRight);
+            if(_isTimeActive)
+            {
+                TimerStart();
+            }
+        }
+        if(curDay == null)
+        {
+            curDay = new Date();
+        }
+        FillHistoryMealList(curDay);
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         try
         {
-
+            outState.putBoolean("isTimeActive",_isTimeActive);
+            outState.putBoolean("isLeft",_isLeft);
+            outState.putBoolean("isRight",_isRight);
+            outState.putLong("leftBeginSign",_leftBeginSign);
+            outState.putLong("rightBeginSign",_rightBeginSign);
+            outState.putInt("leftHistoryTime",_leftHistoryTime);
+            outState.putInt("rightHistoryTime",_rightHistoryTime);
+            outState.putInt("leftTime",_leftTime);
+            outState.putInt("rightTime",_rightTime);
+            outState.putString("recordTime",DateHelper.DateToString(_recordTime));
+            outState.putString("todayDate",DateHelper.DateToString(_todayDate));
         }
         catch(Exception err)
         {
@@ -284,7 +328,6 @@ public class MainActivity extends AppCompatActivity {
                 part3.setLayoutParams(lp);
             }
         });
-        RefreshTodayMeal();
     }
     //时间轮询开始
     private void TimerStart()
@@ -483,12 +526,12 @@ public class MainActivity extends AppCompatActivity {
         TextView tvSum = findViewById(id);
         tvSum.setText(text);
     }
-    //刷新当天用餐数量信息
-    private void RefreshTodayMeal()
+    //填充用餐信息并显示当天用餐数量
+    private void FillHistoryMealList(Date todayDate)
     {
         MealInfo[] infos = _dbbase.GetMealInfos();
         _mealCount = 0;
-        _todayDate = new Date();
+        _todayDate = todayDate;
         if(infos != null)
         {
             CreateMealInfos(infos);
@@ -569,17 +612,10 @@ public class MainActivity extends AppCompatActivity {
         SetImageButton(TimeType.Left, false);
         SetImageButton(TimeType.Right, false);
         MealInfo info = new MealInfo();
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(_recordTime);
-        int curYear = cal.get(Calendar.YEAR);
-        int curMonth = cal.get(Calendar.MONTH) + 1;
-        int curDay = cal.get(Calendar.DAY_OF_MONTH);
-        int curHour = cal.get(Calendar.HOUR_OF_DAY);
-        int curMinute = cal.get(Calendar.MINUTE);
-        info.dateStr = curYear + "-" + TimeNumberToString(curMonth) + "-" + TimeNumberToString(curDay) + " " + TimeNumberToString(curHour) + ":" + TimeNumberToString(curMinute);
+        info.dateStr = DateHelper.DateToString(_recordTime);
         info.leftTime = _leftHistoryTime + _leftTime;
         info.rightTime = _rightHistoryTime + _rightTime;
-        info.totalTime = _totalTime;
+        info.totalTime = info.leftTime + info.rightTime;
         boolean isSaveOk = _dbbase.AddMealInfo(info);
         if(isSaveOk)
         {
@@ -592,20 +628,22 @@ public class MainActivity extends AppCompatActivity {
             else
             {
                 _todayDate = _recordTime;
-                _mealCount = 0;
+                _mealCount = 1;
             }
             SetTextViewText(R.id.tvTodaySum, "今日用餐" + _mealCount + "次");
-            _leftTime = 0;
-            _rightTime = 0;
-            _leftBeginSign = 0;
-            _rightBeginSign = 0;
-            SetTime(TimeType.Left, _leftTime);
-            SetTime(TimeType.Right, _rightTime);
-            SetTime(TimeType.Total, 0);
-            Button btn = (Button)view;
-            btn.setVisibility(View.INVISIBLE);
         }
         _recordTime = null;
+        _leftBeginSign = 0;
+        _rightBeginSign = 0;
+        _leftHistoryTime = 0;
+        _rightHistoryTime = 0;
+        _leftTime = 0;
+        _rightTime = 0;
+        SetTime(TimeType.Left, _leftTime);
+        SetTime(TimeType.Right, _rightTime);
+        SetTime(TimeType.Total, 0);
+        Button btn = (Button)view;
+        btn.setVisibility(View.INVISIBLE);
     }
     //用餐信息列表中一条信息的点击事件
     private void ListItemClickEvent(View view)
