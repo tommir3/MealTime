@@ -79,9 +79,9 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
         }
     }
     //添加用餐信息
-    public boolean AddMealInfo(MealInfo info)
+    public int AddMealInfo(MealInfo info)
     {
-        boolean result;
+        int result;
         try
         {
             ContentValues values = new ContentValues();
@@ -93,11 +93,11 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
             values.put("remark",info.remark);
             SQLiteDatabase db = getWritableDatabase();
             long newID = db.insert(_mealTableName, null, values);
-            result = (newID > 0) ? true : false;
+            result = (int)newID;
         }
         catch(Exception err)
         {
-            result = false;
+            result = -1;
             System.out.printf(err.getMessage());
         }
         return result;

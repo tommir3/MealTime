@@ -39,7 +39,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean _isLeft = false;//是否左侧正在记录时间
     private boolean _isRight = false;//是否右侧正在记录时间
     private boolean _isTimeActive = false;//时间轮询是否开始
-    private Date _recordTime;
+    private Date _recordTime;//记录开始时间
+    private Date _lastRecordTime;//最后一次记录时间 用于记录用餐间隔时间
     private Date _todayDate;//当前时间记录
     private int _mealCount = 0;//今天的用餐次数
     //时间类型 UI界面使用
@@ -157,8 +158,19 @@ public class MainActivity extends AppCompatActivity {
                             if(info.flowID == itemInfo.flowID)
                             {
                                 list.removeViewAt(i);
-                                _mealCount--;
-                                SetTextViewText(R.id.tvTodaySum, "今日用餐" + _mealCount + "次");
+                                Date infoDate = DateHelper.StringToDate(itemInfo.dateStr);
+                                if(infoDate != null && DateHelper.IsSameDate(infoDate, _todayDate, Calendar.DAY_OF_MONTH))
+                                {
+                                    _mealCount--;
+                                    SetTextViewText(R.id.tvTodaySum, "今日用餐" + _mealCount + "次");
+                                }
+                                MealInfo[] intervalInfos = _dbbase.GetMealInfos();
+                                if(intervalInfos != null && intervalInfos.length > 0)
+                                {
+                                    String lastDateStr = intervalInfos[intervalInfos.length - 1].dateStr;
+                                    _lastRecordTime = DateHelper.StringToDate(lastDateStr);
+                                    SetIntervalTime(_lastRecordTime);
+                                }
                                 break;
                             }
                         }
@@ -189,6 +201,9 @@ public class MainActivity extends AppCompatActivity {
                                     MealInfo[] sortInfos = _dbbase.GetMealInfos();
                                     if(sortInfos != null)
                                     {
+                                        String lastDateStr = sortInfos[sortInfos.length - 1].dateStr;
+                                        _lastRecordTime = DateHelper.StringToDate(lastDateStr);
+                                        SetIntervalTime(_lastRecordTime);
                                         for(int j = 0; j < sortInfos.length; ++j)
                                         {
                                             if(sortInfos[j].flowID == info.flowID)
@@ -267,8 +282,9 @@ public class MainActivity extends AppCompatActivity {
         info0.leftTime = 111;
         info0.rightTime = 222;
         info0.remark = "测试数据";
-        boolean isOK = _dbbase.AddMealInfo(info0);
-        if(isOK == true)
+        boolean isOK = false;
+        int newId = _dbbase.AddMealInfo(info0);
+        if(newId > 0)
         {
             MealInfo rInfo0 = _dbbase.GetMealInfo(3);
             if(rInfo0 != null)
@@ -326,6 +342,24 @@ public class MainActivity extends AppCompatActivity {
                     lp.weight = 0;
                 }
                 part3.setLayoutParams(lp);
+            }
+        });
+        TextView tvInterval = findViewById(R.id.tvInterval);
+        tvInterval.setOnClickListener(new View.OnClickListener(){
+            public void onClick(View view) {
+                if(_lastRecordTime != null)
+                {
+                    SetIntervalTime(_lastRecordTime);
+                }
+            }
+        });
+        TextView tvIntervalLabel = findViewById(R.id.tvIntervalLabel);
+        tvIntervalLabel.setOnClickListener(new View.OnClickListener(){
+            public void onClick(View view) {
+                if(_lastRecordTime != null)
+                {
+                    SetIntervalTime(_lastRecordTime);
+                }
             }
         });
     }
@@ -543,10 +577,42 @@ public class MainActivity extends AppCompatActivity {
                     _mealCount++;
                 }
             }
+            Date lastDate = DateHelper.StringToDate(infos[infos.length - 1].dateStr);
+            if(lastDate != null)
+            {
+                //设置用餐间隔时间
+                SetIntervalTime(lastDate);
+            }
         }
         TextView tvTodaySum = findViewById(R.id.tvTodaySum);
         tvTodaySum.setText("今日用餐" + _mealCount + "次");
     }
+
+    //设置距离最后一次用餐间隔时间
+    private void SetIntervalTime(Date lastDate)
+    {
+        _lastRecordTime = lastDate;
+        Date curDate = new Date();
+        int interval = DateHelper.GetSecondBetweenDate(lastDate, curDate);
+        int hour = interval / (60 * 60);
+        int minuteVal = interval - hour * 60 * 60;
+        int minute = minuteVal / 60;
+        if(minuteVal % 60 > 0)
+        {
+            minute += 1;
+        }
+        StringBuilder txt = new StringBuilder();
+        if(hour > 0)
+        {
+            txt.append(hour);
+            txt.append("小时");
+        }
+        minute = (minute > 0) ? minute : 0;
+        txt.append(minute);
+        txt.append("分");
+        SetTextViewText(R.id.tvInterval, txt.toString());
+    }
+
     //左侧按钮点击事件
     private void LeftEvent(View view)
     {
@@ -616,9 +682,10 @@ public class MainActivity extends AppCompatActivity {
         info.leftTime = _leftHistoryTime + _leftTime;
         info.rightTime = _rightHistoryTime + _rightTime;
         info.totalTime = info.leftTime + info.rightTime;
-        boolean isSaveOk = _dbbase.AddMealInfo(info);
-        if(isSaveOk)
+        int newId = _dbbase.AddMealInfo(info);
+        if(newId > 0)
         {
+            info.flowID = newId;
             CreateMealInfoItem(info);
             //计算用餐次数
             if(DateHelper.IsSameDate(_todayDate, _recordTime, Calendar.DAY_OF_MONTH))
@@ -631,6 +698,7 @@ public class MainActivity extends AppCompatActivity {
                 _mealCount = 1;
             }
             SetTextViewText(R.id.tvTodaySum, "今日用餐" + _mealCount + "次");
+            SetIntervalTime(_recordTime);
         }
         _recordTime = null;
         _leftBeginSign = 0;
