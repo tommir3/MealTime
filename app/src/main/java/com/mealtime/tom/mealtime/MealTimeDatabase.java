@@ -13,6 +13,7 @@ import java.util.List;
 public class MealTimeDatabase extends SQLiteOpenHelper {
 
     private final static String _mealTableName = "MealInfo";
+    private final static String _mealCacheTableName = "MealCache";
     private final static int _mealDbVersion = 8;
 
     public MealTimeDatabase(Context context)
@@ -41,6 +42,62 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
 
                 }
             }
+        }
+    }
+
+    public int AddMealTimeCache(MealCacheInfo cacheInfo)
+    {
+        return 0;
+    }
+    public MealCacheInfo GetMealTimeCache()
+    {
+        return null;
+    }
+    public boolean UpdateMealTimeCache(MealCacheInfo cacheInfo)
+    {
+        return false;
+    }
+    private void CreateMealTimeCacheTable()
+    {
+        try
+        {
+            /*
+            create table AAA(
+            id int primary key AUTOINCREMENT,
+            leftBeginSign int not null default 0,
+            rightBeginSign int not null default 0,
+            leftHistoryTime int not null default 0,
+            rightHistoryTime int not null default 0,
+            leftTime int not null default 0,
+            rightTime int not null default 0,
+            isLeft int not null default 0,
+            isRight int not null default 0,
+            isTimeActive int not null default 0,
+            recordTime text null
+            )
+             */
+            StringBuilder sql = new StringBuilder();
+            sql.append("create table IF NOT EXISTS ");
+            sql.append(_mealCacheTableName);
+            sql.append("(");
+            sql.append("id Integer primary key AUTOINCREMENT,");
+            sql.append("leftBeginSign int not null default 0,");
+            sql.append("rightBeginSign int not null default 0,");
+            sql.append("leftHistoryTime int not null default 0,");
+            sql.append("rightHistoryTime int not null default 0,");
+            sql.append("leftTime int not null default 0,");
+            sql.append("rightTime int not null default 0,");
+            sql.append("isLeft int not null default 0,");
+            sql.append("isRight int not null default 0,");
+            sql.append("isTimeActive int not null default 0,");
+            sql.append("recordTime text null");
+            sql.append(")");
+            SQLiteDatabase db = getWritableDatabase();
+            db.execSQL(sql.toString());
+        }
+        catch(Exception err)
+        {
+            System.out.printf(err.getMessage());
         }
     }
     //创建用餐信息表
