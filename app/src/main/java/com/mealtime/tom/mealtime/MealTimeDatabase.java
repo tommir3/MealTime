@@ -24,6 +24,7 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         CreateMealTable(db);
+        CreateMealTimeCacheTable(db);
     }
 
     @Override
@@ -47,17 +48,66 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
 
     public int AddMealTimeCache(MealCacheInfo cacheInfo)
     {
-        return 0;
+        int result;
+        try
+        {
+            ContentValues values = new ContentValues();
+            values.put("leftBeginSign",cacheInfo.leftBeginSign);
+            values.put("rightBeginSign",cacheInfo.rightBeginSign);
+            values.put("leftHistoryTime",cacheInfo.leftHistoryTime);
+            values.put("rightHistoryTime",cacheInfo.rightHistoryTime);
+            values.put("leftTime",cacheInfo.leftTime);
+            values.put("rightTime",cacheInfo.rightTime);
+            values.put("isLeft",cacheInfo.isLeft);
+            values.put("isRight",cacheInfo.isRight);
+            String recordTimeStr = DateHelper.DateToString(cacheInfo.recordTime);
+            values.put("recordTime",recordTimeStr);
+            SQLiteDatabase db = getWritableDatabase();
+            long newID = db.insert(_mealCacheTableName, null, values);
+            result = (int)newID;
+        }
+        catch(Exception err)
+        {
+            result = -1;
+            System.out.printf(err.getMessage());
+        }
+        return result;
     }
     public MealCacheInfo GetMealTimeCache()
     {
-        return null;
+        MealCacheInfo result = null;
+        try
+        {
+            SQLiteDatabase db = getReadableDatabase();
+            Cursor bakData = db.query(_mealCacheTableName,null,null,null,"","","id desc","1");
+            if(bakData != null)
+            {
+                result = CursorToMealCacheInfo(bakData);
+            }
+        }
+        catch(Exception err)
+        {
+            result = null;
+        }
+        return result;
     }
-    public boolean UpdateMealTimeCache(MealCacheInfo cacheInfo)
+    public boolean DeleteMealTimeCache()
     {
-        return false;
+        boolean result;
+        try
+        {
+            SQLiteDatabase db = getWritableDatabase();
+            int bakVal = db.delete(_mealCacheTableName,null,null);
+            result = (bakVal > 0) ? true : false;
+        }
+        catch(Exception err)
+        {
+            result = false;
+            System.out.printf(err.getMessage());
+        }
+        return result;
     }
-    private void CreateMealTimeCacheTable()
+    private void CreateMealTimeCacheTable(SQLiteDatabase db)
     {
         try
         {
@@ -72,7 +122,6 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
             rightTime int not null default 0,
             isLeft int not null default 0,
             isRight int not null default 0,
-            isTimeActive int not null default 0,
             recordTime text null
             )
              */
@@ -89,10 +138,8 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
             sql.append("rightTime int not null default 0,");
             sql.append("isLeft int not null default 0,");
             sql.append("isRight int not null default 0,");
-            sql.append("isTimeActive int not null default 0,");
             sql.append("recordTime text null");
             sql.append(")");
-            SQLiteDatabase db = getWritableDatabase();
             db.execSQL(sql.toString());
         }
         catch(Exception err)
@@ -209,6 +256,51 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
     {
         return GetMealInfos(getReadableDatabase());
     }
+    //获取最后一次用餐信息
+    public MealInfo GetLastMealInfo()
+    {
+        MealInfo result = null;
+        try
+        {
+            SQLiteDatabase db = getReadableDatabase();
+            Cursor bakData = db.query(_mealTableName,null,"",null,"","","date desc","1");
+            if(bakData != null)
+            {
+                MealInfo[] infos = CursorToMealInfos(bakData);
+                if(infos != null && infos.length > 0)
+                {
+                    result = infos[0];
+                }
+            }
+        }
+        catch(Exception err)
+        {
+            result = null;
+            System.out.printf(err.getMessage());
+        }
+        return result;
+    }
+    public int GetMealCountByDay(int year, int month, int day)
+    {
+        int result = -1;
+        try
+        {
+            SQLiteDatabase db = getReadableDatabase();
+            //Cursor bakData1 = db.rawQuery("select count(id) from"+ _mealTableName + " where date('date') = ?",new String[]{year +"-" + month + "-" + day});
+            Cursor bakData = db.query(_mealTableName,new String[]{"count(*)"},"date(date) = ?",new String[]{year +"-" + month + "-" + day},"","","","");
+            if(bakData != null)
+            {
+                bakData.moveToFirst();
+                result = bakData.getInt(0);
+            }
+        }
+        catch(Exception err)
+        {
+            result = -1;
+            System.out.printf(err.getMessage());
+        }
+        return result;
+    }
     //更新指定ID用餐信息
     private boolean UpdateMealInfo(SQLiteDatabase db, MealInfo info)
     {
@@ -238,7 +330,7 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
         MealInfo[] result = null;
         try
         {
-            Cursor bakData = db.query(_mealTableName,null,"",null,"","","datetime(date)","");
+            Cursor bakData = db.query(_mealTableName,null,"date",null,"","","datetime(date)","");
             if(bakData != null)
             {
                 result = CursorToMealInfos(bakData);
@@ -283,6 +375,36 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
                         result[i] = list.get(i);
                     }
                 }
+            }
+        }
+        catch(Exception err)
+        {
+            result = null;
+            System.out.printf(err.getMessage());
+        }
+        return result;
+    }
+
+    private MealCacheInfo CursorToMealCacheInfo(Cursor ptr)
+    {
+        MealCacheInfo result = null;
+        try
+        {
+            if(ptr != null)
+            {
+                ptr.moveToFirst();
+                result = new MealCacheInfo();
+                result.id = ptr.getInt(ptr.getColumnIndex("id"));
+                result.leftBeginSign = ptr.getLong(ptr.getColumnIndex("leftBeginSign"));
+                result.rightBeginSign = ptr.getLong(ptr.getColumnIndex("rightBeginSign"));
+                result.leftHistoryTime = ptr.getInt(ptr.getColumnIndex("leftHistoryTime"));
+                result.rightHistoryTime = ptr.getInt(ptr.getColumnIndex("rightHistoryTime"));
+                result.leftTime = ptr.getInt(ptr.getColumnIndex("leftTime"));
+                result.rightTime = ptr.getInt(ptr.getColumnIndex("rightTime"));
+                result.isLeft = (ptr.getInt(ptr.getColumnIndex("isLeft")) == 0) ? false : true;
+                result.isRight = (ptr.getInt(ptr.getColumnIndex("isRight")) == 0) ? false : true;
+                String recordTimeStr = ptr.getString(ptr.getColumnIndex("recordTime"));
+                result.recordTime = DateHelper.StringToDate(recordTimeStr);
             }
         }
         catch(Exception err)

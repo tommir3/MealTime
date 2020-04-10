@@ -34,7 +34,6 @@ public class MainActivity extends AppCompatActivity {
     private boolean _isTimeActive = false;//时间轮询是否开始
     private MealCacheInfo _cacheInfo;//缓存信息
 //    private Date _todayDate;//当前时间记录
-    private Date _lastRecordTime;//最后一次记录时间 用于记录用餐间隔时间
     private int _mealCount = 0;//今天的用餐次数
     //时间类型 UI界面使用
     private enum TimeType
@@ -66,83 +65,52 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Toast.makeText(MainActivity.this, "进入onCreate方法中", Toast.LENGTH_LONG).show();
-        System.out.printf("进入onCreate方法中");
+        //Toast.makeText(MainActivity.this, "进入onCreate方法中", Toast.LENGTH_LONG).show();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         _dbbase = new MealTimeDatabase(this.getApplicationContext());
         InitUI();
         //test();//测试通过
         //test1();
-        Date curDay = null;
-        _cacheInfo = new MealCacheInfo();
-        if(savedInstanceState != null)
-        {
-            //实例已经存在，重新加载
-            _cacheInfo.isLeft = savedInstanceState.getBoolean("isLeft");
-            _cacheInfo.isRight = savedInstanceState.getBoolean("isRight");
-            _cacheInfo.leftBeginSign = savedInstanceState.getLong("leftBeginSign");
-            _cacheInfo.leftBeginSign = savedInstanceState.getLong("rightBeginSign");
-            _cacheInfo.leftHistoryTime = savedInstanceState.getInt("leftHistoryTime");
-            _cacheInfo.rightHistoryTime = savedInstanceState.getInt("rightHistoryTime");
-            _cacheInfo.leftTime = savedInstanceState.getInt("leftTime");
-            _cacheInfo.rightTime = savedInstanceState.getInt("rightTime");
-            String recdTimeStr = savedInstanceState.getString("recordTime");
-            if(recdTimeStr != null)
-            {
-                _cacheInfo.recordTime = DateHelper.StringToDate(recdTimeStr);
-            }
-            String todayDateStr = savedInstanceState.getString("todayDate");
-            if(todayDateStr != null)
-            {
-                curDay = DateHelper.StringToDate(todayDateStr);
-            }
-            SetImageButton(TimeType.Left, !_cacheInfo.isLeft);
-            SetImageButton(TimeType.Right, !_cacheInfo.isRight);
-            if(_cacheInfo.isLeft || _cacheInfo.isRight)
-            {
-                TimerStart();
-            }
-        }
-        if(curDay == null)
-        {
-            curDay = new Date();
-        }
-        FillHistoryMealList(curDay);
+        //todo:meal count
+        int count = _dbbase.GetMealCountByDay(2019, 12, 11);
+        int c = count * 2;
     }
 
 
     protected void onStart() {
         super.onStart();
-        Toast.makeText(MainActivity.this, "onStart", Toast.LENGTH_LONG).show();
+        //Toast.makeText(MainActivity.this, "onStart", Toast.LENGTH_LONG).show();
+        if(_dbbase == null)
+        {
+            _dbbase = new MealTimeDatabase(this.getApplicationContext());
+        }
+        _cacheInfo = _dbbase.GetMealTimeCache();
+        if(_cacheInfo == null)
+        {
+            _cacheInfo = new MealCacheInfo();
+        }
+        else
+        {
+            SetImageButton(TimeType.Left, _cacheInfo.isLeft);
+            SetImageButton(TimeType.Right, _cacheInfo.isRight);
+            if(_cacheInfo.isLeft || _cacheInfo.isRight)
+            {
+                _isTimeActive = true;
+                TimerStart();
+            }
+        }
+        SetIntervalTime();
+        FillHistoryMealList(new Date());
     }
 
     protected void onStop() {
         super.onStop();
-        Toast.makeText(MainActivity.this, "onStop", Toast.LENGTH_LONG).show();
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        try
+        //Toast.makeText(MainActivity.this, "onStop", Toast.LENGTH_LONG).show();
+        if(_isTimeActive)
         {
-            Toast.makeText(MainActivity.this, "保存数据中", Toast.LENGTH_LONG).show();
-            System.out.printf("保存数据中");
-            outState.putBoolean("isLeft",_cacheInfo.isLeft);
-            outState.putBoolean("isRight",_cacheInfo.isRight);
-            outState.putLong("leftBeginSign",_cacheInfo.leftBeginSign);
-            outState.putLong("rightBeginSign",_cacheInfo.rightBeginSign);
-            outState.putInt("leftHistoryTime",_cacheInfo.leftHistoryTime);
-            outState.putInt("rightHistoryTime",_cacheInfo.rightHistoryTime);
-            outState.putInt("leftTime",_cacheInfo.leftTime);
-            outState.putInt("rightTime",_cacheInfo.rightTime);
-            outState.putString("recordTime",DateHelper.DateToString(_cacheInfo.recordTime));
+            _dbbase.AddMealTimeCache(_cacheInfo);
         }
-        catch(Exception err)
-        {
-            System.out.printf("\n" + err.getMessage() + "\n");
-        }
-        super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -171,13 +139,7 @@ public class MainActivity extends AppCompatActivity {
                                     _mealCount--;
                                     SetTextViewText(R.id.tvTodaySum, "今日用餐" + _mealCount + "次");
                                 }
-                                MealInfo[] intervalInfos = _dbbase.GetMealInfos();
-                                if(intervalInfos != null && intervalInfos.length > 0)
-                                {
-                                    String lastDateStr = intervalInfos[intervalInfos.length - 1].dateStr;
-                                    _lastRecordTime = DateHelper.StringToDate(lastDateStr);
-                                    SetIntervalTime(_lastRecordTime);
-                                }
+                                SetIntervalTime();
                                 break;
                             }
                         }
@@ -208,9 +170,7 @@ public class MainActivity extends AppCompatActivity {
                                     MealInfo[] sortInfos = _dbbase.GetMealInfos();
                                     if(sortInfos != null)
                                     {
-                                        String lastDateStr = sortInfos[sortInfos.length - 1].dateStr;
-                                        _lastRecordTime = DateHelper.StringToDate(lastDateStr);
-                                        SetIntervalTime(_lastRecordTime);
+                                        SetIntervalTime();
                                         for(int j = 0; j < sortInfos.length; ++j)
                                         {
                                             if(sortInfos[j].flowID == info.flowID)
@@ -354,19 +314,13 @@ public class MainActivity extends AppCompatActivity {
         TextView tvInterval = findViewById(R.id.tvInterval);
         tvInterval.setOnClickListener(new View.OnClickListener(){
             public void onClick(View view) {
-                if(_lastRecordTime != null)
-                {
-                    SetIntervalTime(_lastRecordTime);
-                }
+                SetIntervalTime();
             }
         });
         TextView tvIntervalLabel = findViewById(R.id.tvIntervalLabel);
         tvIntervalLabel.setOnClickListener(new View.OnClickListener(){
             public void onClick(View view) {
-                if(_lastRecordTime != null)
-                {
-                    SetIntervalTime(_lastRecordTime);
-                }
+                SetIntervalTime();
             }
         });
     }
@@ -578,8 +532,7 @@ public class MainActivity extends AppCompatActivity {
             for(int i = 0; i <  infos.length; ++i)
             {
                 Date cmpDate = DateHelper.StringToDate(infos[i].dateStr);
-                Date curDate = new Date();
-                if(DateHelper.IsSameDate(curDate,cmpDate, Calendar.DAY_OF_MONTH))
+                if(DateHelper.IsSameDate(todayDate,cmpDate, Calendar.DAY_OF_MONTH))
                 {
                     _mealCount++;
                 }
@@ -588,39 +541,46 @@ public class MainActivity extends AppCompatActivity {
                     _mealCount = 1;
                 }
             }
-            Date lastDate = DateHelper.StringToDate(infos[infos.length - 1].dateStr);
-            if(lastDate != null)
-            {
-                //设置用餐间隔时间
-                SetIntervalTime(lastDate);
-            }
+            SetIntervalTime();
         }
         TextView tvTodaySum = findViewById(R.id.tvTodaySum);
         tvTodaySum.setText("今日用餐" + _mealCount + "次");
     }
 
     //设置距离最后一次用餐间隔时间
-    private void SetIntervalTime(Date lastDate)
+    private void SetIntervalTime()
     {
-        _lastRecordTime = lastDate;
-        Date curDate = new Date();
-        int interval = DateHelper.GetSecondBetweenDate(lastDate, curDate);
-        int hour = interval / (60 * 60);
-        int minuteVal = interval - hour * 60 * 60;
-        int minute = minuteVal / 60;
-        if(minuteVal % 60 > 0)
-        {
-            minute += 1;
-        }
         StringBuilder txt = new StringBuilder();
-        if(hour > 0)
+        if(_dbbase != null)
         {
-            txt.append(hour);
-            txt.append("小时");
+            MealInfo lastMealInfo = _dbbase.GetLastMealInfo();
+            if(lastMealInfo != null)
+            {
+                Date curDate = new Date();
+                Date lastDate = DateHelper.StringToDate(lastMealInfo.dateStr);
+                int interval = DateHelper.GetSecondBetweenDate(lastDate, curDate);
+                int hour = interval / (60 * 60);
+                int minuteVal = interval - hour * 60 * 60;
+                int minute = minuteVal / 60;
+                if(minuteVal % 60 > 0)
+                {
+                    minute += 1;
+                }
+
+                if(hour > 0)
+                {
+                    txt.append(hour);
+                    txt.append("小时");
+                }
+                minute = (minute > 0) ? minute : 0;
+                txt.append(minute);
+                txt.append("分");
+            }
+            else
+            {
+                txt.append("0分");
+            }
         }
-        minute = (minute > 0) ? minute : 0;
-        txt.append(minute);
-        txt.append("分");
         SetTextViewText(R.id.tvInterval, txt.toString());
     }
 
@@ -709,12 +669,13 @@ public class MainActivity extends AppCompatActivity {
                 _mealCount = 1;
             }
             SetTextViewText(R.id.tvTodaySum, "今日用餐" + _mealCount + "次");
-            SetIntervalTime(_cacheInfo.recordTime);
+            SetIntervalTime();
         }
         _cacheInfo.Clear();
-        SetTime(TimeType.Left, _cacheInfo.leftTime);
-        SetTime(TimeType.Right, _cacheInfo.rightTime);
+        SetTime(TimeType.Left, 0);
+        SetTime(TimeType.Right, 0);
         SetTime(TimeType.Total, 0);
+        _dbbase.DeleteMealTimeCache();
         Button btn = (Button)view;
         btn.setVisibility(View.INVISIBLE);
     }
