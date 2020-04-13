@@ -108,6 +108,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onDestroy()
+    {
+        _cacheInfo.Clear();
+        _dbbase.DeleteMealTimeCache();
+        super.onDestroy();
+
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data)
     {
         switch(requestCode)
