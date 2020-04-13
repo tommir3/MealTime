@@ -33,8 +33,6 @@ public class MainActivity extends AppCompatActivity {
     private Timer _timer;//时间轮询
     private boolean _isTimeActive = false;//时间轮询是否开始
     private MealCacheInfo _cacheInfo;//缓存信息
-//    private Date _todayDate;//当前时间记录
-    private int _mealCount = 0;//今天的用餐次数
     //时间类型 UI界面使用
     private enum TimeType
     {
@@ -72,9 +70,6 @@ public class MainActivity extends AppCompatActivity {
         InitUI();
         //test();//测试通过
         //test1();
-        //todo:meal count
-        int count = _dbbase.GetMealCountByDay(2019, 12, 11);
-        int c = count * 2;
     }
 
 
@@ -100,7 +95,6 @@ public class MainActivity extends AppCompatActivity {
                 TimerStart();
             }
         }
-        SetIntervalTime();
         FillHistoryMealList(new Date());
     }
 
@@ -132,14 +126,8 @@ public class MainActivity extends AppCompatActivity {
                             if(info.flowID == itemInfo.flowID)
                             {
                                 list.removeViewAt(i);
-                                Date infoDate = DateHelper.StringToDate(itemInfo.dateStr);
-                                Date curDate = new Date();
-                                if(infoDate != null && DateHelper.IsSameDate(infoDate, curDate, Calendar.DAY_OF_MONTH))
-                                {
-                                    _mealCount--;
-                                    SetTextViewText(R.id.tvTodaySum, "今日用餐" + _mealCount + "次");
-                                }
                                 SetIntervalTime();
+                                SetTodayMealCount();
                                 break;
                             }
                         }
@@ -171,6 +159,7 @@ public class MainActivity extends AppCompatActivity {
                                     if(sortInfos != null)
                                     {
                                         SetIntervalTime();
+                                        SetTodayMealCount();
                                         for(int j = 0; j < sortInfos.length; ++j)
                                         {
                                             if(sortInfos[j].flowID == info.flowID)
@@ -525,26 +514,20 @@ public class MainActivity extends AppCompatActivity {
     private void FillHistoryMealList(Date todayDate)
     {
         MealInfo[] infos = _dbbase.GetMealInfos();
-        _mealCount = 0;
         if(infos != null)
         {
             CreateMealInfos(infos);
-            for(int i = 0; i <  infos.length; ++i)
-            {
-                Date cmpDate = DateHelper.StringToDate(infos[i].dateStr);
-                if(DateHelper.IsSameDate(todayDate,cmpDate, Calendar.DAY_OF_MONTH))
-                {
-                    _mealCount++;
-                }
-                else
-                {
-                    _mealCount = 1;
-                }
-            }
-            SetIntervalTime();
         }
+        SetIntervalTime();
+        SetTodayMealCount();
+    }
+    //设置当天用餐次数
+    private void SetTodayMealCount()
+    {
+        String todyaDateStr = DateHelper.DateToString(new Date());
+        int mealCount = _dbbase.GetMealCountByDay(todyaDateStr);
         TextView tvTodaySum = findViewById(R.id.tvTodaySum);
-        tvTodaySum.setText("今日用餐" + _mealCount + "次");
+        tvTodaySum.setText("今日用餐" + mealCount + "次");
     }
 
     //设置距离最后一次用餐间隔时间
@@ -658,18 +641,8 @@ public class MainActivity extends AppCompatActivity {
         {
             info.flowID = newId;
             CreateMealInfoItem(info);
-            Date curDate = new Date();
-            //计算用餐次数
-            if(DateHelper.IsSameDate(curDate, _cacheInfo.recordTime, Calendar.DAY_OF_MONTH))
-            {
-                _mealCount++;
-            }
-            else
-            {
-                _mealCount = 1;
-            }
-            SetTextViewText(R.id.tvTodaySum, "今日用餐" + _mealCount + "次");
             SetIntervalTime();
+            SetTodayMealCount();//用餐次数
         }
         _cacheInfo.Clear();
         SetTime(TimeType.Left, 0);

@@ -14,7 +14,7 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
 
     private final static String _mealTableName = "MealInfo";
     private final static String _mealCacheTableName = "MealCache";
-    private final static int _mealDbVersion = 8;
+    private final static int _mealDbVersion = 9;
 
     public MealTimeDatabase(Context context)
     {
@@ -30,6 +30,14 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
     {
+        if(!IsExistTable(db, _mealTableName))
+        {
+            CreateMealTable(db);
+        }
+        if(!IsExistTable(db, _mealCacheTableName))
+        {
+            CreateMealTimeCacheTable(db);
+        }
         MealInfo[] infos = GetMealInfos(db);
         if(infos != null)
         {
@@ -99,6 +107,26 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
             SQLiteDatabase db = getWritableDatabase();
             int bakVal = db.delete(_mealCacheTableName,null,null);
             result = (bakVal > 0) ? true : false;
+        }
+        catch(Exception err)
+        {
+            result = false;
+            System.out.printf(err.getMessage());
+        }
+        return result;
+    }
+    public boolean IsExistTable(SQLiteDatabase db, String tableName)
+    {
+        boolean result = false;
+        try
+        {
+            String sqlTest = "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='" + tableName + "';";
+            Cursor bakData = db.rawQuery(sqlTest,null);
+            if(bakData != null)
+            {
+                bakData.moveToFirst();
+                result = (bakData.getInt(0) == 0) ? false : true;
+            }
         }
         catch(Exception err)
         {
@@ -280,14 +308,14 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
         }
         return result;
     }
-    public int GetMealCountByDay(int year, int month, int day)
+    public int GetMealCountByDay(String dateStr)
     {
         int result = -1;
         try
         {
             SQLiteDatabase db = getReadableDatabase();
-            //Cursor bakData1 = db.rawQuery("select count(id) from"+ _mealTableName + " where date('date') = ?",new String[]{year +"-" + month + "-" + day});
-            Cursor bakData = db.query(_mealTableName,new String[]{"count(*)"},"date(date) = ?",new String[]{year +"-" + month + "-" + day},"","","","");
+            String subDateStr = dateStr.substring(0,10);
+            Cursor bakData = db.query(_mealTableName,new String[]{"count(id)"},"substr(date, 1, 10) = ?",new String[]{ subDateStr },"","","","");
             if(bakData != null)
             {
                 bakData.moveToFirst();
@@ -330,7 +358,7 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
         MealInfo[] result = null;
         try
         {
-            Cursor bakData = db.query(_mealTableName,null,"date",null,"","","datetime(date)","");
+            Cursor bakData = db.query(_mealTableName,null,null,null,"","","datetime(date)","");
             if(bakData != null)
             {
                 result = CursorToMealInfos(bakData);
