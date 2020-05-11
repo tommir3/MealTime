@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private Timer _timer;//时间轮询
     private boolean _isTimeActive = false;//时间轮询是否开始
     private MealCacheInfo _cacheInfo;//缓存信息
+    private boolean _isCreate = false;//是否第一次运行程序
     //时间类型 UI界面使用
     private enum TimeType
     {
@@ -69,7 +70,11 @@ public class MainActivity extends AppCompatActivity {
         _dbbase = new MealTimeDatabase(this.getApplicationContext());
         InitUI();
         //test();//测试通过
-        //test1();
+        test1();
+        test1();
+        test1();
+        test1();
+        _isCreate = true;
     }
 
 
@@ -95,7 +100,14 @@ public class MainActivity extends AppCompatActivity {
                 TimerStart();
             }
         }
-        FillHistoryMealList(new Date());
+        if(_isCreate)
+        {
+            FillHistoryMealList(new Date(), 20);
+        }
+        else
+        {
+            SetIntervalTime();
+        }
     }
 
     protected void onStop() {
@@ -105,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
         {
             _dbbase.AddMealTimeCache(_cacheInfo);
         }
+        _isCreate = false;
     }
 
     @Override
@@ -164,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
                                 if(itemDateStr != info.dateStr)
                                 {
                                     //日期改变，调整显示位置
-                                    MealInfo[] sortInfos = _dbbase.GetMealInfos();
+                                    MealInfo[] sortInfos = _dbbase.GetMealInfos(0);
                                     if(sortInfos != null)
                                     {
                                         SetIntervalTime();
@@ -220,14 +233,14 @@ public class MainActivity extends AppCompatActivity {
         info.rightTime = 12;
         info.remark = "测试数据";
         _dbbase.AddMealInfo(info);
-        MealInfo[] infos = _dbbase.GetMealInfos();
+        MealInfo[] infos = _dbbase.GetMealInfos(0);
         info = new MealInfo();
         info.dateStr = "2019-12-12 1:5";
         info.leftTime = 10;
         info.rightTime = 10;
         info.remark = "测试数据";
         _dbbase.AddMealInfo(info);
-        infos = _dbbase.GetMealInfos();
+        infos = _dbbase.GetMealInfos(0);
         List<MealInfo> list = new ArrayList();
         for(int i = 0; i < infos.length; ++i)
         {
@@ -241,7 +254,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void test()//测试通过
     {
-        MealInfo[] infos = _dbbase.GetMealInfos();
+        MealInfo[] infos = _dbbase.GetMealInfos(0);
         MealInfo info0 = new MealInfo();
         info0.dateStr = "2019-12-05 17:23";
         info0.leftTime = 111;
@@ -298,13 +311,17 @@ public class MainActivity extends AppCompatActivity {
                 //列表放大
                 LinearLayout part3 = findViewById(R.id.part3);
                 LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams)part3.getLayoutParams();
+                LinearLayout mealList = findViewById(R.id.llMealList);
+                mealList.removeAllViews();
                 if(lp.weight == 0)
                 {
                     lp.weight = 0.8f;
+                    FillHistoryMealList(new Date(), 20);
                 }
                 else
                 {
                     lp.weight = 0;
+                    FillHistoryMealList(new Date(), 0);
                 }
                 part3.setLayoutParams(lp);
             }
@@ -520,9 +537,9 @@ public class MainActivity extends AppCompatActivity {
         tvSum.setText(text);
     }
     //填充用餐信息并显示当天用餐数量
-    private void FillHistoryMealList(Date todayDate)
+    private void FillHistoryMealList(Date todayDate, int topCount)
     {
-        MealInfo[] infos = _dbbase.GetMealInfos();
+        MealInfo[] infos = _dbbase.GetMealInfos(topCount);
         if(infos != null)
         {
             CreateMealInfos(infos);

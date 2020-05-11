@@ -38,7 +38,7 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
         {
             CreateMealTimeCacheTable(db);
         }
-        MealInfo[] infos = GetMealInfos(db);
+        MealInfo[] infos = GetMealInfos(db, 0);
         if(infos != null)
         {
             for(int i = 0; i < infos.length; ++i)
@@ -280,9 +280,10 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
         return result;
     }
     //获取所有用餐信息
-    public MealInfo[] GetMealInfos()
+    //topCount: 小于等于0时，获取全部信息
+    public MealInfo[] GetMealInfos(int topCount)
     {
-        return GetMealInfos(getReadableDatabase());
+        return GetMealInfos(getReadableDatabase(),topCount);
     }
     //获取最后一次用餐信息
     public MealInfo GetLastMealInfo()
@@ -353,12 +354,14 @@ public class MealTimeDatabase extends SQLiteOpenHelper {
         return result;
     }
     //获取所有用餐信息
-    private MealInfo[] GetMealInfos(SQLiteDatabase db)
+    private MealInfo[] GetMealInfos(SQLiteDatabase db, int topCount)
     {
         MealInfo[] result = null;
         try
         {
-            Cursor bakData = db.query(_mealTableName,null,null,null,"","","datetime(date)","");
+            String limitStr = (topCount <= 0) ? "" : String.valueOf(topCount);
+            String orderByStr = (topCount <= 0) ? "datetime(date)" : "datetime(date) desc";
+            Cursor bakData = db.query(_mealTableName,null,null,null,"","",orderByStr,limitStr);
             if(bakData != null)
             {
                 result = CursorToMealInfos(bakData);
