@@ -70,10 +70,6 @@ public class MainActivity extends AppCompatActivity {
         _dbbase = new MealTimeDatabase(this.getApplicationContext());
         InitUI();
         //test();//测试通过
-        test1();
-        test1();
-        test1();
-        test1();
         _isCreate = true;
     }
 
